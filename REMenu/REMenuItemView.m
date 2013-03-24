@@ -24,6 +24,8 @@
 //
 
 #import "REMenuItemView.h"
+#import <SSToolkit/SSDrawingUtilities.h>
+#import <Archimedes/Archimedes.h>
 
 @implementation REMenuItemView
 
@@ -46,8 +48,9 @@
 
             CGRect subtitleFrame = CGRectMake(_menu.subtitleTextOffset.width, _menu.subtitleTextOffset.height + _titleLabel.frame.size.height, 0, floorf(frame.size.height * (1.0 - 1.0 / 1.725)));
             _subtitleLabel = [[UILabel alloc] initWithFrame:subtitleFrame];
+            _subtitleLabel.numberOfLines = 0;
 
-            _subtitleLabel.contentMode = UIViewContentModeCenter;
+//            _subtitleLabel.contentMode = UIViewContentModeCenter;
             _subtitleLabel.textAlignment = _menu.subtitleTextAlignment;
             _subtitleLabel.backgroundColor = [UIColor clearColor];
             _subtitleLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
@@ -59,14 +62,17 @@
         }
 
         _titleLabel.isAccessibilityElement = NO;
-        _titleLabel.contentMode = UIViewContentModeCenter;
+//        _titleLabel.contentMode = UIViewContentModeCenter;
         _titleLabel.textAlignment = _menu.textAlignment;
         _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        [_titleLabel setNumberOfLines:0];
         [self addSubview:_titleLabel];
 
         _imageView = [[UIImageView alloc] initWithFrame:CGRectNull];
         [self addSubview:_imageView];
+        
+        
     }
 
     return self;
@@ -78,7 +84,11 @@
     CGFloat imageOffset = floor((self.frame.size.height - _item.image.size.height) / 2.0);
     _imageView.image = _item.image;
     _imageView.frame = CGRectMake(imageOffset + _menu.imageOffset.width, imageOffset + _menu.imageOffset.height, _item.image.size.width, _item.image.size.height);
-
+    
+//    _imageView.backgroundColor = [UIColor blueColor];
+//    _titleLabel.backgroundColor = [UIColor redColor];
+//    _subtitleLabel.backgroundColor = [UIColor greenColor];
+    
     _titleLabel.font = _menu.font;
     _titleLabel.text = _item.title;
     _titleLabel.textColor = _menu.textColor;
@@ -94,7 +104,73 @@
     self.accessibilityLabel = _titleLabel.text;
     if (_subtitleLabel.text)
         self.accessibilityLabel = [NSString stringWithFormat:@"%@, %@", _titleLabel.text, _subtitleLabel.text];
-}
+    
+    [self.imageView sizeToFit];
+    [[self titleLabel] sizeToFit];
+    [[self subtitleLabel] sizeToFit];
+    
+    CGFloat titleHeight = self.titleLabel.frame.size.height;
+    CGFloat subtitleHeight = self.subtitleLabel.frame.size.height;
+    
+    CGFloat height = CGRectGetHeight(self.bounds);
+    CGFloat sum = (CGRectGetHeight(self.imageView.frame) + titleHeight);
+    CGFloat margin = abs(floorf((height - sum)/4.f));
+    
+    CGFloat y = margin;
+    
+    self.imageView.frame = CGRectMake(ceilf((CGRectGetWidth([[UIScreen mainScreen] applicationFrame]) - CGRectGetWidth(self.imageView.frame))/2.f),
+                                      (height/2.f),
+                                      CGRectGetWidth(self.imageView.frame),
+                                      CGRectGetHeight(self.imageView.frame));
+//    CGFloat midX = CGRectGetWidth([[UIScreen mainScreen] applicationFrame])/2.f;
+//    self.imageView.center = CGPointMake(midX,
+//                                        (height/2.f) - CGRectGetHeight(self.imageView.frame)).f);
+//    
+//    self.titleLabel.center = CGPointMake(midX,
+//                                         (height + CGRectGetHeight(self.titleLabel.frame))
+//                                         );
+    
+    if (margin < 20) {
+        y += 10.f;
+    }
+    else {
+        y += 20.f;
+    }
+    
+    if (margin > 20){
+        
+        self.imageView.frame = CGRectMake(ceilf((CGRectGetWidth([[UIScreen mainScreen] applicationFrame]) - CGRectGetWidth(self.imageView.frame))/2.f),
+                                          (height/2.f),
+                                          CGRectGetWidth(self.imageView.frame),
+                                          CGRectGetHeight(self.imageView.frame));
+        CGFloat midX = CGRectGetWidth([[UIScreen mainScreen] applicationFrame])/2.f;
+        self.imageView.center = CGPointMake(midX,
+                                            (height - CGRectGetHeight(self.imageView.frame) - margin)/2.f);
+        
+        self.titleLabel.center = CGPointMake(midX,
+                                             (height + CGRectGetHeight(self.titleLabel.frame) + margin)/2.f);
+    }
+    else {
+        self.imageView.frame = CGRectMake(ceilf((CGRectGetWidth([[UIScreen mainScreen] applicationFrame]) - CGRectGetWidth(self.imageView.frame))/2.f), y, CGRectGetWidth(self.imageView.frame), CGRectGetHeight(self.imageView.frame));
+        y += (margin + CGRectGetHeight(self.imageView.frame));
+        
+        if (margin > 20){
+            y -= 5.f;
+        }
+        
+        self.titleLabel.frame = CGRectMake(ceilf((CGRectGetWidth([[UIScreen mainScreen] applicationFrame]) - CGRectGetWidth(self.titleLabel.frame))/2.f), y, CGRectGetWidth(self.titleLabel.frame), CGRectGetHeight(self.titleLabel.frame));
+        
+        y += (margin + titleHeight);
+        
+        if (margin > 20){
+            y -= 10.f;
+        }
+        
+        self.subtitleLabel.frame = CGRectMake(ceilf((CGRectGetWidth([[UIScreen mainScreen] applicationFrame]) - CGRectGetWidth(self.subtitleLabel.frame))/2.f), y, CGRectGetWidth(self.subtitleLabel.frame), CGRectGetHeight(self.subtitleLabel.frame));
+    
+    }
+    
+  }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
@@ -125,15 +201,19 @@
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    self.backgroundColor = [UIColor clearColor];
-    _separatorView.backgroundColor = _menu.separatorColor;
-    _imageView.image = _item.image;
-    _titleLabel.textColor = _menu.textColor;
-    _titleLabel.shadowColor = _menu.textShadowColor;
-    _titleLabel.shadowOffset = _menu.textShadowOffset;
-    _subtitleLabel.textColor = _menu.subtitleTextColor;
-    _subtitleLabel.shadowColor = _menu.subtitleTextShadowColor;
-    _subtitleLabel.shadowOffset = _menu.subtitleTextShadowOffset;
+    
+    [UIView animateWithDuration:.6f delay:0.f options:UIViewAnimationOptionCurveEaseOut|UIViewAnimationOptionTransitionCrossDissolve animations:^{
+        self.backgroundColor = [UIColor clearColor];        
+        _separatorView.backgroundColor = _menu.separatorColor;
+        _imageView.image = _item.image;
+        _titleLabel.textColor = _menu.textColor;
+        _titleLabel.shadowColor = _menu.textShadowColor;
+        _titleLabel.shadowOffset = _menu.textShadowOffset;
+        _subtitleLabel.textColor = _menu.subtitleTextColor;
+        _subtitleLabel.shadowColor = _menu.subtitleTextShadowColor;
+        _subtitleLabel.shadowOffset = _menu.subtitleTextShadowOffset;
+    } completion:nil];
+
 
     CGPoint endedPoint = [[touches anyObject] locationInView:self];
     if (endedPoint.y < 0 || endedPoint.y > CGRectGetHeight(self.bounds))
